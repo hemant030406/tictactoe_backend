@@ -13,7 +13,7 @@ SECRET_KEY = 'django-insecure-$ghr4_(wjpb-d(=*n)otqjbql)=vxu@3tmv2!(@)9p07gikfs!
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['tictactoe-backend-utka.onrender.com']
 
 
 # Application definition
