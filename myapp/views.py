@@ -14,12 +14,18 @@ def create(request):
         roomname = data['name']
         code = data['code']
 
+        if Room.objects.filter(name=roomname).exists():
+            return Response({
+                "ok":"false",
+                "message":"room already exists"
+            })
+        
         room = Room.objects.create(name=roomname,code=code)
         room.save()
 
         return Response({
             "ok":"true",
-            "message":"user_created"
+            "message":"room created"
         })
 
 @api_view(['POST'])
