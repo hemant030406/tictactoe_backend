@@ -13,7 +13,7 @@ SECRET_KEY = 'django-insecure-$ghr4_(wjpb-d(=*n)otqjbql)=vxu@3tmv2!(@)9p07gikfs!
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['tictactoe-backend-utka.onrender.com']
+ALLOWED_HOSTS = ['tictactoe-backend-utka.onrender.com','127.0.0.1']
 
 
 # Application definition
@@ -105,11 +105,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_ROOT = '/var/www/static/'
-STATIC_URL = 'admin/'
-STATICFILES_DIRS = (
-    '/var/www/static/my-dev',
-)
+STATIC_ROOT = (BASE_DIR / 'staticfiles')
+STATIC_URL = '/staticfiles/'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static'
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
