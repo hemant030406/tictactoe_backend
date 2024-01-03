@@ -48,18 +48,31 @@ def join(request):
                 "message":"either roomname or code is incorrect"
             }) 
 
-@api_view(['POST'])
+@api_view(['POST','GET'])
 def play_on(request):
-    data = request.data.dict()
-    roomname = data['name']
-    arr = data['arr']
+    if request.method == 'POST':
+        data = request.data.dict()
+        roomname = data['name']
+        arr = data['arr']
 
-    room = Room.objects.get(name=roomname)
-    room.arr = arr 
-    room.save()
+        room = Room.objects.get(name=roomname)
+        room.arr = arr 
+        room.save()
 
-    return Response({
-        'name': room.name,
-        'code': room.code,
-        'arr' : room.arr 
-    })
+        return Response({
+            'name': room.name,
+            'code': room.code,
+            'arr' : room.arr 
+        })
+    
+    elif request.method == 'GET':
+        data = request.data.dict()
+        roomname = data['name']
+
+        room = Room.objects.get(name=roomname)
+
+        return Response({
+            'name': room.name,
+            'code': room.code,
+            'arr' : room.arr 
+        })
