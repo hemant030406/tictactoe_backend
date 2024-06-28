@@ -13,9 +13,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-$ghr4_(wjpb-d(=*n)otqjbql)=vxu@3tmv2!(@)9p07gikfs!'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['tictactoe-backend-utka.onrender.com','127.0.0.1','.vercel.app']
+ALLOWED_HOSTS = ['*']
+# ALLOWED_HOSTS = ['tictactoe-backend-utka.onrender.com','127.0.0.1','.vercel.app']
 
 
 # Application definition
