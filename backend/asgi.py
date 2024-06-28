@@ -6,7 +6,7 @@ import myapp.routing
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 
-app = ProtocolTypeRouter({
+application = ProtocolTypeRouter({
     'http': get_asgi_application(),
     'websocket': URLRouter(
         myapp.routing.ws_urlpatterns
