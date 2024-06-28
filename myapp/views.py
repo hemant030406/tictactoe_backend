@@ -1,78 +1,120 @@
-from django.shortcuts import render,HttpResponse
+from django.shortcuts import render
 from rest_framework.response import Response
-from .models import Room
+from .models import User
 from rest_framework.decorators import api_view
+from .serializers import UserSerializer
+import jwt,datetime,pytz
 
-# Create your views here.
+IST = pytz.timezone('Asia/Kolkata') 
+
 def home(request):
-    return HttpResponse('This is the home page')
+    return render(request,'index.html')
 
 @api_view(['POST'])
 def create(request):
     if request.method == 'POST':
-        data = request.data.dict()
-        roomname = data['name']
-        code = data['code']
-
-        if Room.objects.filter(name=roomname).exists():
-            return Response({
-                "ok":"false",
-                "message":"room already exists"
-            })
-        
-        room = Room.objects.create(name=roomname,code=code)
-        room.save()
-
+        serializer = UserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response({
-            "ok":"true",
-            "message":"room created"
+            'ok': True
         })
 
 @api_view(['POST'])
 def join(request):
     if request.method == 'POST':
-        data = request.data.dict()
+        data = request.data
         roomname = data['name']
         code = data['code']
 
-        room = Room.objects.filter(name=roomname,code=code).exists()
+        room = User.objects.filter(name=roomname).first()
+
+        if room is None:
+            return Response({
+                'ok': False
+            })
         
-        if room:
+        
+        if not room.check_password(code):
             return Response({
-                "ok":"true",
-                "message":"entry allowed"
-            }) 
-        else:
-            return Response({
-                "ok":"false",
-                "message":"either roomname or code is incorrect"
-            }) 
+                'ok': False
+            })
+        
+        
+        payload = {
+            'id': room.id,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
+            'iat': datetime.datetime.utcnow()
+        }
 
-@api_view(['POST','GET'])
-def play_on(request):
-    if request.method == 'POST':
-        data = request.data.dict()
-        roomname = data['name']
-        arr = data['arr']
+        token = jwt.encode(payload,'secret',algorithm='HS256')
 
-        room = Room.objects.get(name=roomname)
-        room.arr = arr 
-        room.save()
+        res = Response()
 
+        max_age = 60 * 60 * 24 * 15
+
+        expiryDate= datetime.datetime.strftime(
+            datetime.datetime.utcnow() + datetime.timedelta(seconds=max_age),
+            "%a, %d-%b-%Y %H:%M:%S GMT",
+        )
+
+        res.set_cookie(
+            key='jwt',
+            value=token,
+            httponly=True,
+            samesite='None',
+            # domain=request.get_host().split(':')[0],
+            max_age=max_age,
+            expires=expiryDate,
+            secure=True,
+        )
+
+        res.data = {
+            'jwt': token,
+            'ok': True
+        }
+
+        return res
+    
+@api_view(['GET'])
+def auth(request):
+    token = request.COOKIES.get('jwt')
+    if not token:
         return Response({
-            'name': room.name,
-            'code': room.code,
-            'arr' : room.arr 
+            'ok': False
+        })
+    try:
+        payload = jwt.decode(token,'secret',algorithms=['HS256'])
+    except jwt.ExpiredSignatureError:
+        return Response({
+            'ok': False
         })
     
-    elif request.method == 'GET':
-        data = request.data.dict()
-        roomname = data['name']
+    room = User.objects.filter(id=payload['id']).first()
 
-        room = Room.objects.get(name=roomname)
-
+    if room is None:
         return Response({
-            'name': room.name,
-            'code': room.code,
-            'arr' : room.arr 
+            'ok': False
         })
+    
+    serializer = UserSerializer(room)
+
+    return Response({
+        'ok': True,
+        'data': serializer.data
+    })
+
+@api_view(['POST'])
+def delete_cook(request):
+    data = request.data
+    res = Response({
+        'ok': True
+    })
+    res.delete_cookie(
+        key='jwt',
+        samesite='None'
+    )
+    room = User.objects.filter(name = data['room']).first()
+    if room is not None:
+        room.delete()
+    return res
