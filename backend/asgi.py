@@ -12,3 +12,5 @@ application = ProtocolTypeRouter({
         myapp.routing.ws_urlpatterns
     )
 })
+
+app = application
