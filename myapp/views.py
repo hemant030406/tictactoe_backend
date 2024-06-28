@@ -79,6 +79,7 @@ def join(request):
 @api_view(['GET'])
 def auth(request):
     token = request.COOKIES.get('jwt')
+    print(request.COOKIES)
     if not token:
         return Response({
             'ok': False

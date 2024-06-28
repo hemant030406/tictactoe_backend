@@ -52,6 +52,7 @@ class MySyncConsumer(JsonWebsocketConsumer):
             self.channel_values[self.roomname] = {}
 
         cookies = getcookie(self.scope)
+        print('coll',cookies)
 
         if len(cookies):
             if len(self.channel_values[self.roomname]) < 2 and cookies['jwt'] not in self.channel_values[self.roomname].keys():
