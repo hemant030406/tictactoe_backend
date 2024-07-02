@@ -12,18 +12,22 @@ def home(request):
 
 @api_view(['POST'])
 def create(request):
-    print('create')
     if request.method == 'POST':
-        print('post')
         serializer = UserSerializer(data=request.data)
-        print('created serializer')
-        serializer.is_valid(raise_exception=True)
-        print('valid')
-        serializer.save()
-        print('saved')
-        return Response({
-            'ok': True
-        })
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'ok': True
+            })
+        else:
+            msg = ''
+            for field, errors in serializer.errors.items():
+                if field == 'username':
+                    msg = 'The room already exists.'
+                else:
+                    msg = 'Internal error'
+            
+            return Response({'ok': False, 'msg':msg, 'type': 'Warning'})
 
 @api_view(['POST'])
 def join(request):
@@ -36,13 +40,17 @@ def join(request):
 
         if room is None:
             return Response({
-                'ok': False
+                'ok': False,
+                'msg': "The room doesn't exist!",
+                'type': 'Warning'
             })
         
         
         if not room.check_password(code):
             return Response({
-                'ok': False
+                'ok': False,
+                'msg': "Incorrect code!!!",
+                'type': 'Danger'
             })
         
         
