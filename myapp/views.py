@@ -12,10 +12,15 @@ def home(request):
 
 @api_view(['POST'])
 def create(request):
+    print('create')
     if request.method == 'POST':
+        print('post')
         serializer = UserSerializer(data=request.data)
+        print('created serializer')
         serializer.is_valid(raise_exception=True)
+        print('valid')
         serializer.save()
+        print('saved')
         return Response({
             'ok': True
         })
@@ -24,10 +29,10 @@ def create(request):
 def join(request):
     if request.method == 'POST':
         data = request.data
-        roomname = data['name']
+        roomname = data['username']
         code = data['code']
 
-        room = User.objects.filter(name=roomname).first()
+        room = User.objects.filter(username=roomname).first()
 
         if room is None:
             return Response({
@@ -115,7 +120,7 @@ def delete_cook(request):
         key='jwt',
         samesite='None'
     )
-    room = User.objects.filter(name = data['room']).first()
+    room = User.objects.filter(username = data['room']).first()
     if room is not None:
         room.delete()
     return res

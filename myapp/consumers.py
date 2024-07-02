@@ -62,7 +62,7 @@ class MySyncConsumer(JsonWebsocketConsumer):
 
         self.accept()
 
-        room = User.objects.filter(name = self.roomname).first()
+        room = User.objects.filter(username = self.roomname).first()
 
         if room is None:
             return
@@ -75,9 +75,13 @@ class MySyncConsumer(JsonWebsocketConsumer):
 
     def receive_json(self,content,**kwargs):
 
-        room = User.objects.filter(name = content['room']).first()
+        room = User.objects.filter(username = content['room']).first()
 
         cookies = getcookie(self.scope)
+
+        if len(cookies):
+            if len(self.channel_values[self.roomname]) < 2 and cookies['jwt'] not in self.channel_values[self.roomname].keys():
+                self.channel_values[self.roomname][cookies['jwt']] = self.assign_value(self.roomname)
 
         res = {
             'type': None,
