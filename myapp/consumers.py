@@ -120,6 +120,9 @@ class MySyncConsumer(JsonWebsocketConsumer):
             room.undo_stack = []
             room.moves = {}
 
+        elif content['action'] == 'delete':
+            del self.channel_values[self.roomname]
+
         if winCheck(room.moves,'O'):
             res['won'] = 'O'
             room.scores['O'] += 1
