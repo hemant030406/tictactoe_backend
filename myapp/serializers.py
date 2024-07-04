@@ -1,9 +1,9 @@
 from rest_framework import serializers
-from .models import User
+from .models import Room
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
+        model = Room
         fields = ('id','username','code','moves','undo_stack',)
         extra_kwargs = {
             'code': {'write_only': True}

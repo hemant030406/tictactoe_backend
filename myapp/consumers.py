@@ -1,8 +1,9 @@
 from channels.exceptions import StopConsumer
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import JsonWebsocketConsumer
-from .models import User
+from .models import Room
 from django.http import parse_cookie
+from datetime import datetime
 
 def getcookie(scope):
         headers = scope.get('headers', [])
@@ -41,18 +42,27 @@ def winCheck(board, player):
             return True
     return False
 
+def add_message(username,message,messages):
+    timestamp = datetime.now()
+    messages.append({
+        'username': username,
+        'message': message,
+        'timestamp': timestamp.strftime('%Y-%m-%d %H:%M:%S')
+    })
+    messages = sorted(messages, key=lambda x: x['timestamp'])
+    return messages
 
 class MySyncConsumer(JsonWebsocketConsumer):
     channel_values = {}
 
     def connect(self):
         self.roomname = self.scope['url_route']['kwargs']['roomname']
+        self.username = self.scope['url_route']['kwargs']['name']
 
         if self.roomname not in self.channel_values.keys():
             self.channel_values[self.roomname] = {}
 
         cookies = getcookie(self.scope)
-        print('coll',cookies)
 
         if len(cookies):
             if len(self.channel_values[self.roomname]) < 2 and cookies['jwt'] not in self.channel_values[self.roomname].keys():
@@ -62,7 +72,7 @@ class MySyncConsumer(JsonWebsocketConsumer):
 
         self.accept()
 
-        room = User.objects.filter(username = self.roomname).first()
+        room = Room.objects.filter(username = self.roomname).first()
 
         if room is None:
             return
@@ -70,12 +80,25 @@ class MySyncConsumer(JsonWebsocketConsumer):
         self.send_json({
             'type': 'connection.message',
             'moves': room.moves,
-            'scores': room.scores
+            'scores': room.scores,
+            'msges': room.messages,
+            'name': self.username
         })
+        
+        res = {
+            'type': 'game.play',
+            'moves': room.moves,
+            'scores': room.scores,
+            'msges': room.messages,
+            'action': 'new joinee',
+            'name': self.username
+        }
+
+        async_to_sync(self.channel_layer.group_send)(self.roomname,res)
 
     def receive_json(self,content,**kwargs):
 
-        room = User.objects.filter(username = content['room']).first()
+        room = Room.objects.filter(username = content['room']).first()
 
         cookies = getcookie(self.scope)
 
@@ -83,12 +106,16 @@ class MySyncConsumer(JsonWebsocketConsumer):
             if len(self.channel_values[self.roomname]) < 2 and cookies['jwt'] not in self.channel_values[self.roomname].keys():
                 self.channel_values[self.roomname][cookies['jwt']] = self.assign_value(self.roomname)
 
+        timestamp = datetime.now()
+
         res = {
             'type': None,
             'data': content,
             'ok': True,
             'action': content['action'],
-            'won': 'none'
+            'won': 'none',
+            'reason': None,
+            'timestamp':timestamp.strftime('%Y-%m-%d %H:%M:%S')
         }
 
         if content['action'] == 'move':
@@ -122,6 +149,9 @@ class MySyncConsumer(JsonWebsocketConsumer):
 
         elif content['action'] == 'delete':
             del self.channel_values[self.roomname]
+
+        elif content['action'] == 'chat':
+            room.messages = add_message(content['name'],content['msg'],room.messages)
 
         if winCheck(room.moves,'O'):
             res['won'] = 'O'

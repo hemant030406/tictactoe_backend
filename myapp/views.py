@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework.response import Response
-from .models import User
+from .models import Room
 from rest_framework.decorators import api_view
 from .serializers import UserSerializer
 import jwt,datetime,pytz
@@ -13,7 +13,11 @@ def home(request):
 @api_view(['POST'])
 def create(request):
     if request.method == 'POST':
-        serializer = UserSerializer(data=request.data)
+        data = {
+            'username':request.data['room'],
+            'code': request.data['code']
+        }
+        serializer = UserSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return Response({
@@ -33,10 +37,11 @@ def create(request):
 def join(request):
     if request.method == 'POST':
         data = request.data
-        roomname = data['username']
+        roomname = data['room']
         code = data['code']
+        username = data['name']
 
-        room = User.objects.filter(username=roomname).first()
+        room = Room.objects.filter(username=roomname).first()
 
         if room is None:
             return Response({
@@ -55,6 +60,7 @@ def join(request):
         
         
         payload = {
+            'username':username,
             'id': room.id,
             'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
             'iat': datetime.datetime.utcnow()
@@ -89,10 +95,9 @@ def join(request):
 
         return res
     
-@api_view(['GET'])
+@api_view(['POST','GET'])
 def auth(request):
     token = request.COOKIES.get('jwt')
-    print(request.COOKIES)
     if not token:
         return Response({
             'ok': False
@@ -104,7 +109,7 @@ def auth(request):
             'ok': False
         })
     
-    room = User.objects.filter(id=payload['id']).first()
+    room = Room.objects.filter(id=payload['id']).first()
 
     if room is None:
         return Response({
@@ -113,9 +118,16 @@ def auth(request):
     
     serializer = UserSerializer(room)
 
+    if request.method == 'POST':
+        if request.data['name'] != payload['username']:
+            return Response({
+                'ok': False
+            })
+
     return Response({
         'ok': True,
-        'data': serializer.data
+        'data': serializer.data,
+        'username': payload['username']
     })
 
 @api_view(['POST'])
@@ -128,7 +140,8 @@ def delete_cook(request):
         key='jwt',
         samesite='None'
     )
-    room = User.objects.filter(username = data['room']).first()
+    room = Room.objects.filter(username = data['room']).first()
     if room is not None:
         room.delete()
     return res
+    

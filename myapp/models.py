@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.postgres.fields import ArrayField
 
 # Create your models here.
-class User(AbstractUser):
+class Room(AbstractUser):
     username = models.CharField(max_length=100,unique = True)
     code = models.CharField(max_length=100)
     moves = models.JSONField(default=dict)
@@ -12,5 +12,7 @@ class User(AbstractUser):
         'X': 0
     })
     undo_stack = models.JSONField(default=list)
+    messages = models.JSONField(default=list)
 
-    REQUIRED_FIELDS = []
+    def __str__(self) -> str:
+        return f'{self.username} {self.code} {self.moves} {self.scores} {self.undo_stack}'

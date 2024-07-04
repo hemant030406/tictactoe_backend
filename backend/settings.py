@@ -130,7 +130,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-STATIC_ROOT = os.path.join(BASE_DIR , 'staticfiles_build', 'static')
+# STATIC_ROOT = os.path.join(BASE_DIR , 'static')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -150,22 +150,22 @@ CORS_ALLOWED_ORIGIN_REGEXES = [ r"^https://localhost:3000/room/*", ]
 
 CORS_ALLOW_CREDENTIALS = True
 
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "channels_redis.core.RedisChannelLayer",
-#         "CONFIG": {
-#             "hosts": [("127.0.0.1", 6379)],
-#         },
-#     },
-# }
-
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [os.getenv('REDIS_URL','redis://red-cq1ra02ju9rs73bcsncg:6379')],
+            "hosts": [("127.0.0.1", 6379)],
         },
     },
 }
 
-AUTH_USER_MODEL = 'myapp.User'
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels_redis.core.RedisChannelLayer",
+#         "CONFIG": {
+#             "hosts": [os.getenv('REDIS_URL','redis://red-cq1ra02ju9rs73bcsncg:6379')],
+#         },
+#     },
+# }
+
+AUTH_USER_MODEL = 'myapp.Room'
