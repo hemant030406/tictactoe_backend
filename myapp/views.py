@@ -58,6 +58,23 @@ def join(request):
                 'type': 'Danger'
             })
         
+        if username in room.users:
+            return Response({
+                'ok': False,
+                'msg': "Username already exists!!!",
+                'type': 'Warning'
+            })
+        
+        else:
+            room.users.append(username)
+        
+        if len(room.turns.keys()) < 2:
+            if len(room.turns.keys()) == 0:
+                room.turns[username] = 'O'
+            elif len(room.turns.keys()) == 1:
+                room.turns[username] = 'X'
+
+        room.save()
         
         payload = {
             'username':username,
@@ -133,6 +150,14 @@ def auth(request):
 @api_view(['POST'])
 def delete_cook(request):
     data = request.data
+    room = Room.objects.filter(username = data['room']).first()
+
+    if data['name'] not in room.turns.keys():
+        return Response({
+            'ok': False,
+            'reason': "Only the current players can delete the room."
+        })
+
     res = Response({
         'ok': True
     })
@@ -140,8 +165,18 @@ def delete_cook(request):
         key='jwt',
         samesite='None'
     )
-    room = Room.objects.filter(username = data['room']).first()
     if room is not None:
         room.delete()
+    return res
+
+@api_view(['POST'])
+def leave(request):
+    res = Response({
+        'ok': True
+    })
+    res.delete_cookie(
+        key='jwt',
+        samesite='None'
+    )
     return res
     

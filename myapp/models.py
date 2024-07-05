@@ -13,6 +13,8 @@ class Room(AbstractUser):
     })
     undo_stack = models.JSONField(default=list)
     messages = models.JSONField(default=list)
+    users = models.JSONField(default = list)
+    turns = models.JSONField(default = dict)
 
     def __str__(self) -> str:
         return f'{self.username} {self.code} {self.moves} {self.scores} {self.undo_stack}'

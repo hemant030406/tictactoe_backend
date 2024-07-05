@@ -53,20 +53,10 @@ def add_message(username,message,messages):
     return messages
 
 class MySyncConsumer(JsonWebsocketConsumer):
-    channel_values = {}
 
     def connect(self):
         self.roomname = self.scope['url_route']['kwargs']['roomname']
         self.username = self.scope['url_route']['kwargs']['name']
-
-        if self.roomname not in self.channel_values.keys():
-            self.channel_values[self.roomname] = {}
-
-        cookies = getcookie(self.scope)
-
-        if len(cookies):
-            if len(self.channel_values[self.roomname]) < 2 and cookies['jwt'] not in self.channel_values[self.roomname].keys():
-                self.channel_values[self.roomname][cookies['jwt']] = self.assign_value(self.roomname)
 
         async_to_sync(self.channel_layer.group_add)(self.roomname,self.channel_name)
 
@@ -82,29 +72,13 @@ class MySyncConsumer(JsonWebsocketConsumer):
             'moves': room.moves,
             'scores': room.scores,
             'msges': room.messages,
-            'name': self.username
+            'name': self.username,
+            'users': room.users
         })
-        
-        res = {
-            'type': 'game.play',
-            'moves': room.moves,
-            'scores': room.scores,
-            'msges': room.messages,
-            'action': 'new joinee',
-            'name': self.username
-        }
-
-        async_to_sync(self.channel_layer.group_send)(self.roomname,res)
 
     def receive_json(self,content,**kwargs):
 
         room = Room.objects.filter(username = content['room']).first()
-
-        cookies = getcookie(self.scope)
-
-        if len(cookies):
-            if len(self.channel_values[self.roomname]) < 2 and cookies['jwt'] not in self.channel_values[self.roomname].keys():
-                self.channel_values[self.roomname][cookies['jwt']] = self.assign_value(self.roomname)
 
         timestamp = datetime.now()
 
@@ -119,16 +93,23 @@ class MySyncConsumer(JsonWebsocketConsumer):
         }
 
         if content['action'] == 'move':
-            
-            if self.channel_values[self.roomname][cookies['jwt']] != content['turn']:
+
+            if content['name'] not in room.turns.keys():
                 res['ok'] = False
+                res['reason'] = f'Invalid turn by {content['name']}! He/she can only chat!!'
+
+            elif content['id'] in room.moves.keys():
+                res['ok'] = False
+                res['reason'] = f'Invalid turn by {content['name']}!'
+            
+            elif room.turns[content['name']] != content['turn']:
+                res['ok'] = False
+                res['reason'] = f'Invalid turn by {content['name']}!'
 
             else:
                 if content['id'] not in room.moves.keys():
                     room.undo_stack.append(content['id'])
                     room.moves[content['id']] = content['turn']
-                else:
-                    res['ok'] = False
 
                 if 'lastTurn' not in room.moves.keys():
                     room.moves['lastTurn'] = content['turn']
@@ -137,21 +118,35 @@ class MySyncConsumer(JsonWebsocketConsumer):
                     room.moves['lastTurn'] = content['turn']
 
         elif content['action'] == 'undo':
-            id = room.undo_stack.pop()
-            content['id'] = id
-            if id in room.moves.keys():
-                del room.moves[id]
-                room.moves['lastTurn'] = 'X' if room.moves['lastTurn'] == 'O' else 'O'
+            if len(room.undo_stack) != 0:
+                id = room.undo_stack.pop()
+                content['id'] = id
+                if id in room.moves.keys():
+                    del room.moves[id]
+                    room.moves['lastTurn'] = 'X' if room.moves['lastTurn'] == 'O' else 'O'
 
         elif content['action'] == 'reset':
             room.undo_stack = []
             room.moves = {}
 
-        elif content['action'] == 'delete':
-            del self.channel_values[self.roomname]
-
         elif content['action'] == 'chat':
             room.messages = add_message(content['name'],content['msg'],room.messages)
+
+        elif content['action'] == 'leave':
+            if content['name'] in room.turns.keys():
+                res['reason'] = 'reset'
+                turn = room.turns[content['name']]
+                idx = room.users.index(content['name']) + 1
+                if idx != len(room.users):
+                    if room.users[idx] in room.turns.keys():
+                        idx += 1
+                        if idx != len(room.users):
+                            room.turns[room.users[idx]] = turn    
+                    else:
+                        room.turns[room.users[idx]] = turn
+                del room.turns[content['name']]
+            room.users.remove(content['name'])
+            room.save()
 
         if winCheck(room.moves,'O'):
             res['won'] = 'O'
@@ -173,14 +168,3 @@ class MySyncConsumer(JsonWebsocketConsumer):
     def disconnect(self,close_code):
         async_to_sync(self.channel_layer.group_discard(self.roomname,self.channel_name))
         raise StopConsumer
-    
-    def assign_value(self, rmname):
-        d = self.channel_values.get(rmname, {})
-        if len(d) == 0:
-            return 'O'
-        elif len(d) == 1:
-            for key in d.keys():
-                if d[key] == 'O':
-                    return 'X'
-                else:
-                    return 'O'

@@ -7,4 +7,5 @@ urlpatterns = [
     path('join',views.join,name='join'),
     path('auth',views.auth,name='auth'),
     path('delete',views.delete_cook,name='delete_cookie'),
+    path('leave',views.leave,name='leave_room'),
 ]
