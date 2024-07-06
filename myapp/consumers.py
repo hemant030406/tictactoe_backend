@@ -67,6 +67,10 @@ class MySyncConsumer(JsonWebsocketConsumer):
         if room is None:
             return
         
+        if len(room.users) == 0:
+            room.delete()
+            return
+        
         self.send_json({
             'type': 'connection.message',
             'moves': room.moves,
