@@ -96,15 +96,15 @@ class MySyncConsumer(JsonWebsocketConsumer):
 
             if content['name'] not in room.turns.keys():
                 res['ok'] = False
-                res['reason'] = f'Invalid turn by {content['name']}! He/she can only chat!!'
+                res['reason'] = f"Invalid turn by {content['name']}! He/she can only chat!!"
 
             elif content['id'] in room.moves.keys():
                 res['ok'] = False
-                res['reason'] = f'Invalid turn by {content['name']}!'
+                res['reason'] = f"Invalid turn by {content['name']}!"
             
             elif room.turns[content['name']] != content['turn']:
                 res['ok'] = False
-                res['reason'] = f'Invalid turn by {content['name']}!'
+                res['reason'] = f"Invalid turn by {content['name']}!"
 
             else:
                 if content['id'] not in room.moves.keys():
